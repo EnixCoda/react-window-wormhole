@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "start": "tsc --watch",
-    "build": "tsc"
+    "build": "tsc",
+    "example": "yarn build && cp -r build/ example/src/react-window-wormhole && cd example/src && yarn start"
   },
   "devDependencies": {
     "typescript": "^3.4.5",
