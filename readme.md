@@ -8,10 +8,10 @@ Extend your React App to other browser windows.
 
 ## Usage
 
-### Install from npm
+### Install
 
 ```bash
-yarn add react-window-wormhole
+$ yarn add react-window-wormhole
 ```
 
 ### Basic example
