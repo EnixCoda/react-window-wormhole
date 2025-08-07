@@ -1,22 +1,11 @@
 {
   "name": "react-window-wormhole",
-  "version": "1.0.0",
-  "description": "Extend your React App to other browser windows.",
-  "main": "build",
+  "version": "0.0.0",
+  "private": true,
   "repository": "git@github.com:EnixCoda/react-window-wormhole.git",
   "author": "EnixCoda <enixcoda@gmail.com>",
-  "license": "MIT",
-  "files": [
-    "build"
+  "workspaces": [
+    "packages/*"
   ],
-  "scripts": {
-    "start": "tsc --watch",
-    "build": "tsc",
-    "example": "yarn build && cp -r build/ example/src/react-window-wormhole && cd example/src && yarn start"
-  },
-  "devDependencies": {
-    "typescript": "^3.4.5",
-    "@types/react": "^16",
-    "react": "^16"
-  }
+  "license": "MIT"
 }
