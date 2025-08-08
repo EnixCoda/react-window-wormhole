@@ -1,5 +1,5 @@
 {
-  "name": "react-window-wormhole",
+  "name": "react-window-wormhole-packages",
   "version": "0.0.0",
   "private": true,
   "repository": "git@github.com:EnixCoda/react-window-wormhole.git",
@@ -7,5 +7,8 @@
   "workspaces": [
     "packages/*"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
 }

@@ -5,7 +5,6 @@
   "type": "module",
   "module": "esm/index.js",
   "types": "esm/index.d.ts",
-  "repository": "git@github.com:EnixCoda/react-window-wormhole.git",
   "author": "EnixCoda <enixcoda@gmail.com>",
   "license": "MIT",
   "files": [
@@ -15,20 +14,17 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "test": "vitest",
-    "test:watch": "vitest --watch",
-    "example": "yarn build && cp -r esm/ example/src/react-window-wormhole && cd example/src && yarn start"
+    "test:watch": "vitest --watch"
   },
   "devDependencies": {
     "@types/node": "^24.2.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "react": "^19.1.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "react": "^16 || ^17 || ^18 || ^19"
-  },
-  "dependencies": {
-    "vitest": "^3.2.4"
   }
 }

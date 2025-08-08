@@ -52,18 +52,18 @@ function Parent() {
 
 ```tsx
 // child window. render Child for path `/child`
-import { WormholeExit } from 'react-window-wormhole'
+import { WormholeExit } from "react-window-wormhole";
 
 function Child() {
   return (
     /* Exit is where data flows out */
     <WormholeExit<PropsToTransfer>>
-      {props => (
+      {(props) => (
         /* this `props` looks same as `toTransfer` */
         <button onClick={() => props.onAdd(1)}>{props.count}</button>
       )}
     </WormholeExit>
-  )
+  );
 }
 ```
 

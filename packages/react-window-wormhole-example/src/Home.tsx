@@ -9,19 +9,24 @@ export function Home() {
     <div className="App">
       <header className="App-header">
         <p>
-          <button onClick={() => setOpen((o) => !o)}>{open ? "close" : "open"}</button>
+          <button onClick={() => setOpen((o) => !o)}>
+            {open ? "close" : "open"}
+          </button>
         </p>
         <h4>Serialized data:</h4>
-        <pre style={{ textAlign: "left" }}>{JSON.stringify({ count }, null, 2)}</pre>
+        <pre style={{ textAlign: "left" }}>
+          {JSON.stringify({ count }, null, 2)}
+        </pre>
         <button onClick={() => setCount((c) => c + 1)}>add</button>
         <WormholeEntry<ChildProps>
           open={open}
           onClose={() => setOpen(false)}
           path="/child"
           props={{
-            // onAdd(val: number) {
-            //   setCount((c) => c + val);
-            // },
+            onAdd(val: number) {
+              setCount((c) => c + val);
+              return null;
+            },
             count,
           }}
         />

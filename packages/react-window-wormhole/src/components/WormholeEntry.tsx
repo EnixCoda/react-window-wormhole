@@ -1,13 +1,15 @@
 import * as React from "react";
-import { Message, MessageFlags } from "../Messager.js";
-import { TransferableObject } from "../model/Transferable.js";
-import { sendData } from "../sendData.js";
-import { createSubscription } from "../utils.js";
+import {
+  createMessageChannel,
+  MessageChannel,
+} from "../channel/MessageChannel.js";
+import { createWindowChannel } from "../channel/WindowChannel.js";
+import { MessageTypes } from "../message/Message.js";
+import { transformTransferableInput } from "../transferable/transformInput.js";
 
-// TP is in short of `TransferProps`
-type Props<TP extends TransferableObject> = {
+type Props<TP extends Record<string, any>> = {
   path: string;
-  featureString?: string;
+  features?: string;
   open: boolean;
   onClose: () => void; // close, on both initiative and passive
   supportReload?: boolean;
@@ -15,41 +17,45 @@ type Props<TP extends TransferableObject> = {
   props?: TP;
 };
 
-export class WormholeEntry<TransferProps extends TransferableObject> extends React.Component<Props<TransferProps>> {
+export class WormholeEntry<
+  TP extends Record<string, any>,
+> extends React.Component<Props<TP>> {
+  static defaultProps = {
+    features: "chrome=1",
+  };
+
   private openedWindow: Window | null = null;
+  private windowMessageChannel: MessageChannel | null = null;
   private onWillUnmount: (() => void) | null = null;
 
   componentDidMount() {
     if (this.props.open) this.openWindow();
   }
 
-  componentDidUpdate(prevProps: Props<TransferProps>) {
+  componentDidUpdate(prevProps: Props<TP>) {
     if (this.props.open && !prevProps.open) {
       this.openWindow();
     } else if (!this.props.open && prevProps.open) {
       this.closeWindow();
     }
-    if (this.openedWindow) {
-      // send when render to update latest props naturally
-      const { props: toTransfer, open: opened } = this.props;
-      if (opened) sendData(this.openedWindow, toTransfer);
-    }
   }
 
   componentWillUnmount() {
-    if (this.onWillUnmount) this.onWillUnmount();
+    this.onWillUnmount?.();
   }
 
   private openWindow() {
-    const { path, featureString = "chrome=1" } = this.props;
-    const target = path;
-    const openedWindow = window.open(path, target, featureString);
-    this.openedWindow = openedWindow;
-    if (openedWindow) {
-      this.registerOpenedWindow(openedWindow);
-    } else {
+    this.closeWindow();
+
+    const { path, features } = this.props;
+    const openedWindow = window.open(path, path, features);
+    if (!openedWindow) {
       console.error("failed opening window");
+      return;
     }
+
+    this.openedWindow = openedWindow;
+    this.registerOpenedWindow(openedWindow);
   }
 
   private closeWindow() {
@@ -65,41 +71,33 @@ export class WormholeEntry<TransferProps extends TransferableObject> extends Rea
     }
   }
 
-  private registerOpenedWindow = createSubscription((openedWindow: Window) => {
-    const handleMessage = (() => {
-      return (e: MessageEvent) => {
-        if (e.source === openedWindow) {
-          // process messages from opened window
-          const rawMessage: Message = e.data;
-          switch (rawMessage.type) {
-            case MessageFlags.SYNC_INIT: {
-              this.handleSyncInit(openedWindow);
-              break;
-            }
-            // case MessageFlags.FUNC_CALL: {
-            //   const [name, ...args] = rawMessage.data;
-            //   const method = this.props.toTransfer[name];
-            //   if (typeof method === "function") {
-            //     method(...args);
-            //   }
-            //   break;
-            // }
-          }
-        }
-      };
-    })();
-    const unsubscribe = () => {
-      window.removeEventListener("message", handleMessage);
+  private registerOpenedWindow = (openedWindow: Window) => {
+    this.windowMessageChannel ??= createMessageChannel(
+      createWindowChannel(openedWindow),
+    );
+
+    this.windowMessageChannel.onInitMessage(this.handleSyncInit);
+    // this.windowMessageChannel.onDataMessage();
+    this.windowMessageChannel.onFuncMessage((message) => {
+      const [name, args] = message.data;
+      const method = this.props.props?.[name];
+      if (typeof method === "function") {
+        method(...args);
+      }
+    });
+
+    this.onWillUnmount = () => {
+      this.windowMessageChannel?.close();
       this.onWillUnmount = null;
     };
-    window.addEventListener("message", handleMessage);
-    this.onWillUnmount = unsubscribe;
-    return unsubscribe;
-  });
+  };
 
   private handleSyncInit = (() => {
     let isClosing = false; // used with timer to distinguish close and reload of opened window
-    return (openedWindow: Window) => {
+    return () => {
+      const openedWindow = this.openedWindow;
+      if (!openedWindow) return;
+
       isClosing = false;
       const { onClose, reloadDuration = 1000, supportReload } = this.props;
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -116,9 +114,24 @@ export class WormholeEntry<TransferProps extends TransferableObject> extends Rea
         openedWindow.addEventListener("unload", () => onClose(), false);
       }
       openedWindow.addEventListener("beforeunload", handleBeforeUnload);
-      sendData(openedWindow, this.props.props);
+      this.sendData(this.props.props);
     };
   })();
+
+  sendData = (data: any) => {
+    if (!this.openedWindow) {
+      console.warn("No opened window to send data to.");
+      return;
+    }
+
+    this.windowMessageChannel ??= createMessageChannel(
+      createWindowChannel(this.openedWindow),
+    );
+    this.windowMessageChannel.postMessage({
+      type: MessageTypes.SEND_DATA,
+      data: transformTransferableInput(data),
+    });
+  };
 
   render() {
     return null;
