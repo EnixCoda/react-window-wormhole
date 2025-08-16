@@ -1,7 +1,7 @@
-export function isCrossOrigin(window_: Window) {
+export function isCrossOrigin(targetWindow: Window) {
   try {
     // try access protected property which is blocked if cross origin, e.g. parent window redirected
-    (() => window_.location.href)(); // :)
+    targetWindow.location.href; // :)
     return false;
   } catch (err) {
     return true;

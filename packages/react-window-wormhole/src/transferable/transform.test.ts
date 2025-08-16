@@ -54,7 +54,7 @@ describe("TransferableData", () => {
   });
 
   it("should handle transferable objects", () => {
-    const input: Transferable.ObjectInput = { a: 1, b: "test", c: true };
+    const input: Transferable.Inputs.Object = { a: 1, b: "test", c: true };
     expect(transformTransferableInput(input)).toMatchInlineSnapshot(`
       [
         "object",
@@ -81,7 +81,7 @@ describe("TransferableData", () => {
   });
 
   it("should handle transferable arrays", () => {
-    const arr: Transferable.ArrayInput = [1, "test", true, null];
+    const arr: Transferable.Inputs.Arr = [1, "test", true, null];
     expect(transformTransferableInput(arr)).toMatchInlineSnapshot(`
       [
         "array",
@@ -115,8 +115,6 @@ describe("TransferableCallable", () => {
   it("should handle callable transferable", () => {
     let i = 0;
     const inc = (arg0: number) => (i += arg0);
-    inc(2);
-    expect(i).toBe(2);
 
     expect(transformTransferableInput(inc)).toMatchInlineSnapshot(`
       [
@@ -125,17 +123,24 @@ describe("TransferableCallable", () => {
       ]
     `);
 
-    const receivedInc = transformTransferableInput(inc);
-    expect(transformTransferableOutput(receivedInc)).toEqual(
-      expect.any(Function),
-    );
-    expect(isTransferableOutputOf.callable(receivedInc)).toBe(true);
-    if (!isTransferableOutputOf.callable(receivedInc)) {
+    const returnValue = inc(2);
+    expect(returnValue).toBe(2);
+    expect(i).toBe(2);
+
+    const intOutput = transformTransferableInput(inc);
+    const intRemote = transformTransferableOutput(intOutput);
+    expect(intRemote).toEqual(expect.any(Function));
+
+    if (!isTransferableOutputOf.callable(intOutput)) {
       throw new Error("Expected callable output");
     }
-    const [_, path] = receivedInc;
-    const caller = createCaller(inc);
-    caller(path, [2]);
-    expect(i).toBe(4);
+
+    {
+      const [_, path] = intOutput;
+      const caller = createCaller(inc);
+      const returnValue = caller(path, [2]);
+      expect(returnValue).toBe(4);
+      expect(i).toBe(4);
+    }
   });
 });

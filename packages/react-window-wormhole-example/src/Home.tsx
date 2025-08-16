@@ -18,18 +18,18 @@ export function Home() {
           {JSON.stringify({ count }, null, 2)}
         </pre>
         <button onClick={() => setCount((c) => c + 1)}>add</button>
-        <WormholeEntry<ChildProps>
-          open={open}
-          onClose={() => setOpen(false)}
-          path="/child"
-          props={{
-            onAdd(val: number) {
-              setCount((c) => c + val);
-              return null;
-            },
-            count,
-          }}
-        />
+        {open && (
+          <WormholeEntry<ChildProps>
+            path="/child"
+            props={{
+              onAdd(val: number) {
+                setCount((c) => c + val);
+                return null;
+              },
+              count,
+            }}
+          />
+        )}
       </header>
     </div>
   );

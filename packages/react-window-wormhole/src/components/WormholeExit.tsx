@@ -1,7 +1,7 @@
 import { JSX, useEffect, useState } from "react";
-import { createWindowChannel } from "../channel/WindowChannel.js";
-import { Message, MessageTypes } from "../message/Message.js";
+import { Message, MessageTypes } from "../channel/TransferableMessage.js";
 import { isTransferableOutputOf } from "../transferable/isOutput.js";
+import { transformToTransferableArray } from "../transferable/transformInput.js";
 import { transformTransferableOutputObject } from "../transferable/transformOutput.js";
 import { Transferable } from "../transferable/type.js";
 import { isCrossOrigin } from "../utils.js";
@@ -12,8 +12,6 @@ function setUpListeners<TP>(handleProps: (vp: TP) => void) {
   const opener = window.opener;
   // close when opener reloads/redirect to prevent complex communication problem
   opener.addEventListener("beforeunload", () => window.close());
-
-  const { postMessage } = createWindowChannel(opener);
 
   postMessage({
     type: MessageTypes.SYNC_INIT,
@@ -28,7 +26,7 @@ function setUpListeners<TP>(handleProps: (vp: TP) => void) {
           (...args: Transferable.Input[]) => {
             postMessage({
               type: MessageTypes.FUNC_CALL,
-              data: [path, args],
+              data: [path, transformToTransferableArray(args)[1]],
             });
           };
         if (isTransferableOutputOf.object(rawMessage.data)) {

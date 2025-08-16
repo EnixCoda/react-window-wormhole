@@ -4,7 +4,7 @@ import { Transferable } from "./type.js";
 export type TransformOutputContext = {
   generateCallable: (
     path: Transferable.FieldKey[],
-  ) => Transferable.CallableInput;
+  ) => Transferable.Inputs.Callable;
 };
 const defaultContext: TransformOutputContext = {
   generateCallable: (path: Transferable.FieldKey[]) => () => {
@@ -35,7 +35,7 @@ export const transformTransferableOutput = (
 };
 
 export const transformTransferableOutputObject = (
-  [type, object]: Transferable.ObjectOutput,
+  [type, object]: Transferable.Outputs.Object,
   context: TransformOutputContext = defaultContext,
-): Transferable.ObjectInput =>
+): Transferable.Inputs.Object =>
   mapValues(object, (value) => transformTransferableOutput(value, context));

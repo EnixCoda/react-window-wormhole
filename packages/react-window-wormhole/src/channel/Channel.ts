@@ -1,5 +1,4 @@
-export interface Channel<T = unknown> {
-  onMessage: (handler: (message: T) => void) => void;
-  postMessage(message: T): void;
-  close(): void;
+export interface Channel {
+  onMessage(handler: (payload: unknown) => void): void;
+  postMessage(payload: unknown): void;
 }

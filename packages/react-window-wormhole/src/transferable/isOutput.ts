@@ -8,11 +8,11 @@ const figureOutput =
   (obj: unknown): obj is Output =>
     isOutput(obj) ? obj[0] === type : false;
 
-const isLossless = figureOutput<Transferable.LosslessOutput>("lossless");
-const isCallable = figureOutput<Transferable.CallableOutput>("callable");
-const isObject = figureOutput<Transferable.ObjectOutput>("object");
-const isArray = figureOutput<Transferable.ArrayOutput>("array");
-const isUnknown = figureOutput<Transferable.UnknownOutput>("unknown");
+const isLossless = figureOutput<Transferable.Outputs.Lossless>("lossless");
+const isCallable = figureOutput<Transferable.Outputs.Callable>("callable");
+const isObject = figureOutput<Transferable.Outputs.Object>("object");
+const isArray = figureOutput<Transferable.Outputs.Arr>("array");
+const isUnknown = figureOutput<Transferable.Outputs.Unknown>("unknown");
 const isAny = (obj: unknown): obj is Transferable.Output =>
   isOutput(obj) && obj[0] !== "unknown";
 

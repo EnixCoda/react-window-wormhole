@@ -31,10 +31,10 @@ import { WormholeExit } from "react-window-wormhole";
 //   };
 // };
 
-export interface Props {
+export type Props = {
   count: number;
   onAdd: (val: number) => null;
-}
+};
 
 export function Child() {
   return (
