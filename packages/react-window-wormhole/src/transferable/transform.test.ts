@@ -1,61 +1,68 @@
 import { describe, expect, it } from "vitest";
-import { isTransferableOutputOf } from "./isOutput.js";
-import { createCaller, transformTransferableInput } from "./transformInput.js";
-import { transformTransferableOutput } from "./transformOutput.js";
+import { decodeTransferable, DecodeTransformContext } from "./decode.js";
+import { createCaller, encodeTransferable } from "./encode.js";
+import { isEncodedOf } from "./isEncoded.js";
 import { Transferable } from "./type.js";
+
+const defaultTransformContext: DecodeTransformContext = {
+  generateCallable:
+    (path) =>
+    (...args) =>
+      console.warn(
+        `No callable context provided, using default callable that does nothing.`,
+        path,
+        args,
+      ),
+};
+
+const _decodeTransferable = (encoded: Transferable.Encoded) =>
+  decodeTransferable(encoded, defaultTransformContext);
 
 describe("TransferableData", () => {
   it("should handle lossless transferable types", () => {
-    expect(transformTransferableInput(1)).toMatchInlineSnapshot(`
+    expect(encodeTransferable(1)).toMatchInlineSnapshot(`
       [
         "lossless",
         1,
       ]
     `);
-    expect(transformTransferableOutput(transformTransferableInput(1))).toEqual(
-      1,
-    );
-    expect(transformTransferableInput("string")).toMatchInlineSnapshot(`
+
+    expect(_decodeTransferable(encodeTransferable(1))).toEqual(1);
+    expect(encodeTransferable("string")).toMatchInlineSnapshot(`
       [
         "lossless",
         "string",
       ]
     `);
-    expect(
-      transformTransferableOutput(transformTransferableInput("string")),
-    ).toEqual("string");
-    expect(transformTransferableInput(true)).toMatchInlineSnapshot(`
+    expect(_decodeTransferable(encodeTransferable("string"))).toEqual("string");
+    expect(encodeTransferable(true)).toMatchInlineSnapshot(`
       [
         "lossless",
         true,
       ]
     `);
-    expect(
-      transformTransferableOutput(transformTransferableInput(true)),
-    ).toEqual(true);
-    expect(transformTransferableInput(null)).toMatchInlineSnapshot(`
+    expect(_decodeTransferable(encodeTransferable(true))).toEqual(true);
+    expect(encodeTransferable(null)).toMatchInlineSnapshot(`
       [
         "lossless",
         null,
       ]
     `);
-    expect(
-      transformTransferableOutput(transformTransferableInput(null)),
-    ).toEqual(null);
-    expect(transformTransferableInput(undefined)).toMatchInlineSnapshot(`
+    expect(_decodeTransferable(encodeTransferable(null))).toEqual(null);
+    expect(encodeTransferable(undefined)).toMatchInlineSnapshot(`
       [
         "lossless",
         undefined,
       ]
     `);
-    expect(
-      transformTransferableOutput(transformTransferableInput(undefined)),
-    ).toEqual(undefined);
+    expect(_decodeTransferable(encodeTransferable(undefined))).toEqual(
+      undefined,
+    );
   });
 
   it("should handle transferable objects", () => {
-    const input: Transferable.Inputs.Object = { a: 1, b: "test", c: true };
-    expect(transformTransferableInput(input)).toMatchInlineSnapshot(`
+    const decoded: Transferable.Decode.Object = { a: 1, b: "test", c: true };
+    expect(encodeTransferable(decoded)).toMatchInlineSnapshot(`
       [
         "object",
         {
@@ -75,14 +82,12 @@ describe("TransferableData", () => {
       ]
     `);
 
-    expect(
-      transformTransferableOutput(transformTransferableInput(input)),
-    ).toEqual(input);
+    expect(_decodeTransferable(encodeTransferable(decoded))).toEqual(decoded);
   });
 
   it("should handle transferable arrays", () => {
-    const arr: Transferable.Inputs.Arr = [1, "test", true, null];
-    expect(transformTransferableInput(arr)).toMatchInlineSnapshot(`
+    const arr: Transferable.Decode.Arr = [1, "test", true, null];
+    expect(encodeTransferable(arr)).toMatchInlineSnapshot(`
       [
         "array",
         [
@@ -105,9 +110,7 @@ describe("TransferableData", () => {
         ],
       ]
     `);
-    expect(
-      transformTransferableOutput(transformTransferableInput(arr)),
-    ).toEqual(arr);
+    expect(_decodeTransferable(encodeTransferable(arr))).toEqual(arr);
   });
 });
 
@@ -116,7 +119,7 @@ describe("TransferableCallable", () => {
     let i = 0;
     const inc = (arg0: number) => (i += arg0);
 
-    expect(transformTransferableInput(inc)).toMatchInlineSnapshot(`
+    expect(encodeTransferable(inc)).toMatchInlineSnapshot(`
       [
         "callable",
         [],
@@ -127,16 +130,16 @@ describe("TransferableCallable", () => {
     expect(returnValue).toBe(2);
     expect(i).toBe(2);
 
-    const intOutput = transformTransferableInput(inc);
-    const intRemote = transformTransferableOutput(intOutput);
-    expect(intRemote).toEqual(expect.any(Function));
+    const intEncoded = encodeTransferable(inc);
+    const intDecoded = _decodeTransferable(intEncoded);
+    expect(intDecoded).toEqual(expect.any(Function));
 
-    if (!isTransferableOutputOf.callable(intOutput)) {
-      throw new Error("Expected callable output");
+    if (!isEncodedOf.callable(intEncoded)) {
+      throw new Error("Expected callable encoded");
     }
 
     {
-      const [_, path] = intOutput;
+      const [_, path] = intEncoded;
       const caller = createCaller(inc);
       const returnValue = caller(path, [2]);
       expect(returnValue).toBe(4);

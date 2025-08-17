@@ -1,84 +1,107 @@
 import { EventHub } from "../utils/EventHub.js";
 import { MessageChannel } from "./MessageChannel.js";
-import { P2PPeer } from "./P2PPeer.js";
+import { Peer } from "./Peer.js";
 import {
+  AckMessage,
   DataMessage,
   FuncCallMessage,
   FuncReturnMessage,
+  InitMessage,
+  Message,
+  QuitMessage,
 } from "./TransferableMessage.js";
 
 export class P2PClient {
-  peers = new Map<string, P2PPeer>();
+  peers = new Map<string, Peer>();
 
-  dataHub = new EventHub<DataMessage["data"]>();
-  funcCallHub = new EventHub<FuncCallMessage["data"]>();
-  funcReturnHub = new EventHub<FuncReturnMessage["data"]>();
+  // hubs for AppMessage
+  dataHub = new EventHub<DataMessage>();
+  funcCallHub = new EventHub<FuncCallMessage>();
+  funcReturnHub = new EventHub<FuncReturnMessage>();
 
   constructor(
     readonly id: string,
     private channel: MessageChannel,
   ) {
-    channel.onInit((message) => {
-      this.#addPeer(message.from);
-      this.#postAck(message.from);
-    });
-    channel.onAck((message) => {
-      if (message.to === this.id) this.#addPeer(message.from);
-    });
-    channel.onQuit((message) => {
-      this.#removePeer(message.from);
-    });
-    channel.onDataMessage((message) => {
-      if (this.id === message.to) this.dataHub.dispatch(message.data);
-    });
-    channel.onFuncCall((message) => {
-      if (this.id === message.to) this.funcCallHub.dispatch(message.data);
-    });
-    channel.onFuncReturn((message) => {
-      if (this.id === message.to) this.funcReturnHub.dispatch(message.data);
-    });
+    this.#listenToChannel();
   }
 
-  #postAck(to: string) {
-    this.channel.postAck(this.id, to);
+  #listenToChannel() {
+    const channel = this.channel;
+    channel.onInit((message) => {
+      this.#peerJoin(message);
+      this.#postAck({ to: message.from });
+    });
+    channel.onQuit(this.#peerLeave);
+    const filterToClientMessage = createMessageFilter({ to: this.id });
+    channel.onAck(filterToClientMessage(this.#peerJoin));
+    channel.onDataMessage(filterToClientMessage(this.dataHub.dispatch));
+    channel.onFuncCall(filterToClientMessage(this.funcCallHub.dispatch));
+    channel.onFuncReturn(filterToClientMessage(this.funcReturnHub.dispatch));
+  }
+
+  #postAck({ to }: Pick<AckMessage, "to">) {
+    this.channel.postAck({ from: this.id, to });
   }
 
   postInit() {
-    this.channel.postInit(this.id);
+    this.channel.postInit({ from: this.id });
   }
 
-  #addPeer = (peerId: P2PPeer["id"]): void => {
-    if (peerId === this.id) {
+  #addHub = new EventHub<Peer>();
+  onPeerJoin = (handler: (peer: Peer) => void) =>
+    this.#addHub.addListener(handler);
+
+  #leaveHub = new EventHub<Peer>();
+  onPeerLeave = (handler: (peer: Peer) => void) =>
+    this.#leaveHub.addListener(handler);
+
+  #peerJoin = ({ from }: InitMessage | AckMessage): void => {
+    if (from === this.id) {
       console.warn(`Cannot add self as a peer.`);
       return;
     }
 
-    if (this.peers.has(peerId)) {
-      console.warn(`Peer with id ${peerId} already exists.`);
+    if (this.peers.has(from)) {
+      console.warn(`Peer with id ${from} already exists.`);
       return;
     }
 
-    const peer = new P2PPeer(peerId, this.id, this.channel);
-    this.peers.set(peerId, peer);
-    this.#joinHub.dispatch(peer);
+    const peer = new Peer(from, this.id, this.channel);
+
+    const filterDirectMessage = createMessageFilter({
+      to: this.id,
+      from,
+    });
+    this.channel.onDataMessage(filterDirectMessage(peer.dataHub.dispatch));
+    this.channel.onFuncCall(filterDirectMessage(peer.funcCallHub.dispatch));
+    this.channel.onFuncReturn(filterDirectMessage(peer.funcReturnHub.dispatch));
+    this.channel.onQuit(filterDirectMessage(peer.quitHub.dispatch));
+
+    this.peers.set(from, peer);
+    this.#addHub.dispatch(peer);
   };
 
-  #removePeer = (peerId: P2PPeer["id"]): void => {
-    if (!this.peers.has(peerId)) return;
-    const peer = this.peers.get(peerId)!;
-    this.peers.delete(peerId);
+  #peerLeave = ({ from }: QuitMessage): void => {
+    if (!this.peers.has(from)) return;
+    const peer = this.peers.get(from)!;
+    this.peers.delete(from);
     this.#leaveHub.dispatch(peer);
   };
-
-  #leaveHub = new EventHub<P2PPeer>();
-  onPeerLeave = (handler: (peer: P2PPeer) => void) =>
-    this.#leaveHub.addListener(handler);
-
-  #joinHub = new EventHub<P2PPeer>();
-  onPeerJoin = (handler: (peer: P2PPeer) => void) =>
-    this.#joinHub.addListener(handler);
 
   close = () => {
     this.peers.forEach((peer) => peer.postQuit());
   };
 }
+
+const createMessageFilter =
+  ({ from, to }: { from?: string; to?: string }) =>
+  <M extends Message>(callback: (message: M) => void): ((message: M) => void) =>
+  (message: Message) => {
+    if (
+      (!from || ("from" in message && message.from === from)) &&
+      (!to || ("to" in message && message.to === to))
+    ) {
+      callback(message as M);
+    }
+  };

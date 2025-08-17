@@ -1,36 +1,40 @@
 import { mapValues } from "../keys.js";
-import { isTransferableInputOf } from "./isInput.js";
+import { isDecodedOf } from "./isDecoded.js";
 import { Transferable } from "./type.js";
 
-type TransformInputContext = {
+type EncodeTransformContext = {
   path: Transferable.FieldKey[];
 };
-const defaultTransformContext: TransformInputContext = {
+const defaultTransformContext: EncodeTransformContext = {
   path: [],
 };
 
-export const transformTransferableInput = (
+// forbid 2nd argument
+export const encodeTransferable = (value: unknown) =>
+  _encodeTransferable(value);
+
+const _encodeTransferable = (
   value: unknown,
-  context: TransformInputContext = defaultTransformContext,
-): Transferable.Output => {
-  if (isTransferableInputOf.lossless(value)) return ["lossless", value];
-  if (isTransferableInputOf.object(value))
+  context: EncodeTransformContext = defaultTransformContext,
+): Transferable.Encoded => {
+  if (isDecodedOf.lossless(value)) return ["lossless", value];
+  if (isDecodedOf.object(value))
     return transformToTransferableObject(value, context);
-  if (isTransferableInputOf.array(value))
+  if (isDecodedOf.array(value))
     return transformToTransferableArray(value, context);
-  if (isTransferableInputOf.callable(value))
+  if (isDecodedOf.callable(value))
     return transformToTransferableCallable(value, context);
   console.warn(`Unsupported data type to transfer:`, value);
   return ["lossless", null];
 };
 
 export const transformToTransferableObject = (
-  props: Transferable.Inputs.Object,
-  context: TransformInputContext = defaultTransformContext,
-): Transferable.Outputs.Object => [
+  props: Transferable.Decode.Object,
+  context: EncodeTransformContext = defaultTransformContext,
+): Transferable.Encode.Object => [
   "object",
   mapValues(props, (value, key) =>
-    transformTransferableInput(value, {
+    _encodeTransferable(value, {
       ...context,
       path: context.path.concat(key),
     }),
@@ -38,12 +42,12 @@ export const transformToTransferableObject = (
 ];
 
 export const transformToTransferableArray = (
-  value: Transferable.Inputs.Arr,
-  context: TransformInputContext = defaultTransformContext,
-): Transferable.Outputs.Arr => [
+  value: Transferable.Decode.Arr,
+  context: EncodeTransformContext = defaultTransformContext,
+): Transferable.Encode.Arr => [
   "array",
   value.map((item, index) =>
-    transformTransferableInput(item, {
+    _encodeTransferable(item, {
       ...context,
       path: context.path.concat(index),
     }),
@@ -52,19 +56,19 @@ export const transformToTransferableArray = (
 
 export const resolve = (
   path: Transferable.FieldKey[],
-  target: Transferable.Input,
-): Transferable.Input => {
+  target: Transferable.Decoded,
+): Transferable.Decoded => {
   if (path.length === 0) {
     return target;
   }
 
-  if (isTransferableInputOf.object(target)) {
+  if (isDecodedOf.object(target)) {
     const [field] = path;
     const value = target[field];
     return resolve(path.slice(1), value);
   }
 
-  if (isTransferableInputOf.array(target)) {
+  if (isDecodedOf.array(target)) {
     const [field] = path;
     if (typeof field !== "number") {
       throw new Error(
@@ -86,13 +90,13 @@ export const resolve = (
   );
 };
 
-export const createCaller = (source: Transferable.Input) => {
-  return function caller<Args extends Transferable.Input[]>(
+export const createCaller = (source: Transferable.Decoded) => {
+  return function caller<Args extends Transferable.Decoded[]>(
     path: Transferable.FieldKey[],
     args: Args,
   ) {
     const target = resolve(path, source);
-    if (!isTransferableInputOf.callable(target)) {
+    if (!isDecodedOf.callable(target)) {
       throw new Error(`No callable found at path: ${path}`);
     }
 
@@ -101,6 +105,6 @@ export const createCaller = (source: Transferable.Input) => {
 };
 
 export const transformToTransferableCallable = (
-  value: Transferable.Inputs.Callable,
-  context: TransformInputContext = defaultTransformContext,
-): Transferable.Outputs.Callable => ["callable", context.path];
+  value: Transferable.Decode.Callable,
+  context: EncodeTransformContext = defaultTransformContext,
+): Transferable.Encode.Callable => ["callable", context.path];

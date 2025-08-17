@@ -35,21 +35,34 @@ export interface TargetedMessage {
 
 export interface DataMessage
   extends TargetedMessage,
-    BaseDataMessage<MessageTypes.SEND_DATA, Transferable.Output> {}
+    RefMessage,
+    BaseDataMessage<MessageTypes.SEND_DATA, Transferable.Encoded> {}
+
+export interface RefMessage {
+  ref: string;
+}
+
+export interface ThreadMessage {
+  thread: string;
+}
 
 export interface FuncCallMessage
   extends TargetedMessage,
+    RefMessage,
+    ThreadMessage,
     BaseDataMessage<
       MessageTypes.FUNC_CALL,
       [
-        Transferable.Outputs.PayloadOf<Transferable.Outputs.Callable>,
-        Transferable.Output[], // arguments
+        Transferable.Encode.PayloadOf<Transferable.Encode.Callable>,
+        Transferable.Encoded[], // arguments
       ]
     > {}
 
 export interface FuncReturnMessage
   extends TargetedMessage,
-    BaseDataMessage<MessageTypes.FUNC_RETURN, Transferable.Output> {}
+    RefMessage,
+    ThreadMessage,
+    BaseDataMessage<MessageTypes.FUNC_RETURN, Transferable.Encoded> {}
 
 export type ControlMessage = InitMessage | AckMessage | QuitMessage;
 export type AppMessage = DataMessage | FuncCallMessage | FuncReturnMessage;

@@ -1,13 +1,9 @@
 import { JSX, useEffect, useMemo, useState } from "react";
-import { isTransferableInputOf } from "../transferable/isInput.js";
-import {
-  resolve,
-  transformTransferableInput,
-} from "../transferable/transformInput.js";
 import { Transferable } from "../transferable/type.js";
 import { WindowP2PClient } from "../windowMessage/WindowClient.js";
+import { Wormhole } from "../Wormhole.js";
 
-type Options<TP extends Transferable.Inputs.Object> = {
+type Options<TP extends Transferable.Decode.Object> = {
   path: string;
   features?: string;
   supportReload?: boolean;
@@ -15,8 +11,8 @@ type Options<TP extends Transferable.Inputs.Object> = {
   props: TP;
 };
 
-type Props<TP extends Transferable.Inputs.Object> = Options<TP>;
-export function WormholeEntry<P extends Transferable.Inputs.Object>(
+type Props<TP extends Transferable.Decode.Object> = Options<TP>;
+export function WormholeEntry<P extends Transferable.Decode.Object>(
   options: Props<P>,
 ): JSX.Element {
   useWormholeEntry(options);
@@ -24,7 +20,7 @@ export function WormholeEntry<P extends Transferable.Inputs.Object>(
   return <></>;
 }
 
-export function useWormholeEntry<P extends Transferable.Inputs.Object>({
+export function useWormholeEntry<P extends Transferable.Decode.Object>({
   path,
   features,
   reloadDuration = 1000,
@@ -53,18 +49,15 @@ export function useWormholeEntry<P extends Transferable.Inputs.Object>({
     [exitWindow],
   );
 
+  useEffect(() => () => client?.close(), [client]);
+
+  const wormhole = useMemo(
+    () => (client ? new Wormhole.Entrance(client) : null),
+    [client, props],
+  );
+
   useEffect(() => {
-    if (client) {
-      client.onPeerJoin((peer) => {
-        peer.postData(transformTransferableInput(props));
-        peer.onFuncCall(([path, args]) => {
-          const method = resolve(path, props);
-          if (isTransferableInputOf.callable(method)) {
-            return method(...args);
-          }
-        });
-      });
-      return () => client.close();
-    }
-  }, [client]);
+    if (!wormhole) return;
+    wormhole.feed(props);
+  }, [wormhole, props]);
 }

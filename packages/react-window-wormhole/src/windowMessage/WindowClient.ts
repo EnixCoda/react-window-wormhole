@@ -9,8 +9,4 @@ export class WindowP2PClient extends P2PClient {
       new MessageChannel(new WindowChannel(targetWindow)),
     );
   }
-
-  getOnline = () => {
-    this.postInit();
-  };
 }

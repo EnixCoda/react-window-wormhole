@@ -1,46 +1,46 @@
 export namespace Transferable {
   export type FieldKey = string | number;
 
-  export namespace Inputs {
+  export namespace Decode {
     export type Lossless = number | string | boolean | null | undefined;
     export type Callable<
-      Args extends Input[] = Input[],
-      R extends Input | void = void,
+      Args extends Decoded[] = Decoded[],
+      R extends Decoded | void = void,
     > = (...args: Args) => R;
 
     export type Object = {
-      [key: FieldKey]: Input;
+      [key: FieldKey]: Decoded;
     };
-    export type Arr = Array<Input>;
+    export type Arr = Array<Decoded>;
   }
 
-  export type Input =
-    | Inputs.Lossless
-    | Inputs.Object
-    | Inputs.Arr
-    | Inputs.Callable<any[], any>;
+  export type Decoded =
+    | Decode.Lossless
+    | Decode.Object
+    | Decode.Arr
+    | Decode.Callable<any[], any>;
 
-  export namespace Outputs {
-    type __Output<K extends string, T> = [K, T];
-    export type PayloadOf<T extends __Output<any, any>> =
-      T extends __Output<infer K, infer V> ? V : never;
+  export namespace Encode {
+    type __Encode<K extends string, T> = [K, T];
+    export type PayloadOf<T extends __Encode<any, any>> =
+      T extends __Encode<infer K, infer V> ? V : never;
 
-    export type Lossless = __Output<"lossless", Inputs.Lossless>;
-    export type Callable = __Output<"callable", FieldKey[]>;
-    export type Object = __Output<
+    export type Lossless = __Encode<"lossless", Decode.Lossless>;
+    export type Callable = __Encode<"callable", FieldKey[]>;
+    export type Object = __Encode<
       "object",
       {
-        [key: FieldKey]: Output;
+        [key: FieldKey]: Encoded;
       }
     >;
-    export type Arr = __Output<"array", Array<Output>>;
-    export type Unknown = __Output<"unknown", null>;
+    export type Arr = __Encode<"array", Array<Encoded>>;
+    export type Unknown = __Encode<"unknown", null>;
   }
 
-  export type Output =
-    | Outputs.Lossless
-    | Outputs.Callable
-    | Outputs.Object
-    | Outputs.Arr
-    | Outputs.Unknown;
+  export type Encoded =
+    | Encode.Lossless
+    | Encode.Callable
+    | Encode.Object
+    | Encode.Arr
+    | Encode.Unknown;
 }

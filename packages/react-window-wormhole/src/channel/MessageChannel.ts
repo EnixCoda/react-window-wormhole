@@ -37,7 +37,7 @@ export class MessageChannel {
   #initMessageHub = new EventHub<InitMessage>();
   onInit = (handler: (message: InitMessage) => void) =>
     this.#initMessageHub.addListener(handler);
-  postInit = (from: string) =>
+  postInit = ({ from }: Omit<InitMessage, "type">) =>
     this.channel.postMessage({
       type: MessageTypes.SYNC_INIT,
       from,
@@ -46,7 +46,7 @@ export class MessageChannel {
   #ackMessageHub = new EventHub<AckMessage>();
   onAck = (handler: (message: AckMessage) => void) =>
     this.#ackMessageHub.addListener(handler);
-  postAck = (from: string, to: string) =>
+  postAck = ({ from, to }: Omit<AckMessage, "type">) =>
     this.channel.postMessage({
       type: MessageTypes.SYNC_ACK,
       from,
@@ -56,7 +56,7 @@ export class MessageChannel {
   #quitMessageHub = new EventHub<QuitMessage>();
   onQuit = (handler: (message: QuitMessage) => void) =>
     this.#quitMessageHub.addListener(handler);
-  postQuit = (from: string) =>
+  postQuit = ({ from }: Omit<QuitMessage, "type">) =>
     this.channel.postMessage({
       type: MessageTypes.SYNC_QUIT,
       from,
@@ -65,40 +65,53 @@ export class MessageChannel {
   #dataMessageHub = new EventHub<DataMessage>();
   onDataMessage = (handler: (message: DataMessage) => void) =>
     this.#dataMessageHub.addListener(handler);
-  postData = (from: string, to: string, data: DataMessage["data"]) => {
+  postData = ({ ref, from, to, data }: Omit<DataMessage, "type">) => {
     this.channel.postMessage({
       type: MessageTypes.SEND_DATA,
-      data,
+      ref,
       from,
       to,
+      data,
     } satisfies DataMessage);
   };
 
   #funcCallMessageHub = new EventHub<FuncCallMessage>();
   onFuncCall = (handler: (message: FuncCallMessage) => void) =>
     this.#funcCallMessageHub.addListener(handler);
-  postFuncCall = (from: string, to: string, func: FuncCallMessage["data"]) => {
+  postFuncCall = ({
+    from,
+    to,
+    ref,
+    thread,
+    data,
+  }: Omit<FuncCallMessage, "type">) => {
     this.channel.postMessage({
       type: MessageTypes.FUNC_CALL,
-      data: func,
+      data,
       from,
       to,
+      ref,
+      thread,
     } satisfies FuncCallMessage);
   };
 
   #funcReturnMessageHub = new EventHub<FuncReturnMessage>();
   onFuncReturn = (handler: (message: FuncReturnMessage) => void) =>
     this.#funcReturnMessageHub.addListener(handler);
-  postFuncReturn = (
-    from: string,
-    to: string,
-    returnValue: FuncReturnMessage["data"],
-  ) => {
+  postFuncReturn = ({
+    from,
+    to,
+    ref,
+    thread,
+    data,
+  }: Omit<FuncReturnMessage, "type">) => {
     this.channel.postMessage({
       type: MessageTypes.FUNC_RETURN,
-      data: returnValue,
       from,
       to,
+      ref,
+      thread,
+      data,
     } satisfies FuncReturnMessage);
   };
 }
