@@ -37,6 +37,35 @@ export namespace Transferable {
     export type Unknown = __Encode<"unknown", null>;
   }
 
+  export type Transferred<T> = T extends Decode.Object
+    ? {
+        [key in keyof T]: Transferred<T[key]>;
+      }
+    : T extends Decode.Arr
+      ? {
+          [key in keyof T]: Transferred<T[key]>;
+        }
+      : T extends Decode.Lossless
+        ? T
+        : TransferredCallable<T>;
+
+  type TransferredReturnType<R> = Promise<
+    R extends void ? void : R extends Decoded ? Transferred<R> : never
+  >;
+
+  type TransferredArgs<Args extends Decoded[]> = Args extends []
+    ? []
+    : Args extends [infer A0, ...infer Rest]
+      ? Rest extends Decoded[]
+        ? [Transferred<A0>, ...TransferredArgs<Rest>]
+        : never
+      : never;
+
+  type TransferredCallable<T> =
+    T extends Decode.Callable<infer Args, infer R>
+      ? (...args: TransferredArgs<Args>) => TransferredReturnType<R>
+      : never;
+
   export type Encoded =
     | Encode.Lossless
     | Encode.Callable
