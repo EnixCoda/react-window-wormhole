@@ -4,9 +4,6 @@ import { WindowChannel } from "./WindowChannel.js";
 
 export class WindowP2PClient extends P2PClient {
   constructor(targetWindow: Window) {
-    super(
-      targetWindow.location.href,
-      new MessageChannel(new WindowChannel(targetWindow)),
-    );
+    super(new MessageChannel(new WindowChannel(targetWindow)));
   }
 }

@@ -6,6 +6,7 @@ export class WindowChannel implements Channel {
   constructor(private targetWindow: Window) {
     if (isCrossOrigin(targetWindow))
       throw new Error("Cross-origin communication is not allowed");
+    this.init();
   }
 
   private messageEventListener = (e: MessageEvent) => {
@@ -31,6 +32,6 @@ export class WindowChannel implements Channel {
   }
 
   postMessage(payload: unknown): void {
-    this.messageHub.dispatch(payload);
+    this.targetWindow.postMessage(payload, window.origin);
   }
 }

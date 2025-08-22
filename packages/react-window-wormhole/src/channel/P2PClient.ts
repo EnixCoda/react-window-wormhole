@@ -1,4 +1,5 @@
 import { EventHub } from "../utils/EventHub.js";
+import { uuid } from "../utils/uuid.js";
 import { MessageChannel } from "./MessageChannel.js";
 import { Peer } from "./Peer.js";
 import {
@@ -18,12 +19,12 @@ export class P2PClient {
   dataHub = new EventHub<DataMessage>();
   funcCallHub = new EventHub<FuncCallMessage>();
   funcReturnHub = new EventHub<FuncReturnMessage>();
+  readonly id = uuid();
 
-  constructor(
-    readonly id: string,
-    private channel: MessageChannel,
-  ) {
+  constructor(private channel: MessageChannel) {
+    console.debug(this.id);
     this.#listenToChannel();
+    this.postInit();
   }
 
   #listenToChannel() {

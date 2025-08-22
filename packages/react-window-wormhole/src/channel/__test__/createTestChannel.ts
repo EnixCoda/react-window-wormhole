@@ -19,8 +19,8 @@ export const createTestChannel = (): Channel => {
 export function createMessageClients(): [P2PClient, P2PClient] {
   const channel = createTestChannel();
   channel.onMessage((message) => console.debug(message));
-  const local = new P2PClient("local", new MessageChannel(channel));
-  const remote = new P2PClient("remote", new MessageChannel(channel));
+  const local = new P2PClient(new MessageChannel(channel));
+  const remote = new P2PClient(new MessageChannel(channel));
 
   return [local, remote];
 }
@@ -29,8 +29,6 @@ export function createTestPeers(
   local: P2PClient,
   remote: P2PClient,
 ): [Peer, Peer] {
-  local.postInit();
-
   const localPeer = remote.peers.get("local");
   if (!localPeer) throw new Error("Local peer not found");
 
