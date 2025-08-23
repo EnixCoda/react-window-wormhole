@@ -53,7 +53,7 @@ export function useWormholeEntry<P extends Transferable.Decode.Object>({
 
   const wormhole = useMemo(
     () => (client ? new Wormhole.Entrance(client) : null),
-    [client, props],
+    [client],
   );
 
   useEffect(() => {

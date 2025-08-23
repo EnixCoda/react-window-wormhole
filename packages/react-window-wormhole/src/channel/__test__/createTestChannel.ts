@@ -11,6 +11,7 @@ export const createTestChannel = (): Channel => {
       hub.addListener(message);
     },
     postMessage(message) {
+      console.debug("Test channel message", message);
       hub.dispatch(message);
     },
   };
@@ -18,9 +19,8 @@ export const createTestChannel = (): Channel => {
 
 export function createMessageClients(): [P2PClient, P2PClient] {
   const channel = createTestChannel();
-  channel.onMessage((message) => console.debug(message));
-  const local = new P2PClient(new MessageChannel(channel));
-  const remote = new P2PClient(new MessageChannel(channel));
+  const local = new P2PClient(new MessageChannel(channel), "local");
+  const remote = new P2PClient(new MessageChannel(channel), "remote");
 
   return [local, remote];
 }
@@ -29,10 +29,10 @@ export function createTestPeers(
   local: P2PClient,
   remote: P2PClient,
 ): [Peer, Peer] {
-  const localPeer = remote.peers.get("local");
+  const localPeer = remote.peers.get(local.id);
   if (!localPeer) throw new Error("Local peer not found");
 
-  const remotePeer = local.peers.get("remote");
+  const remotePeer = local.peers.get(remote.id);
   if (!remotePeer) throw new Error("Remote peer not found");
   return [localPeer, remotePeer];
 }

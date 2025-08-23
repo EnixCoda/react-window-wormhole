@@ -22,13 +22,22 @@ describe("MessageChannel", () => {
     localPeer.onData(onData);
     remotePeer.postData({ ref: "", data: encodeTransferable(1) });
     expect(onData).toHaveBeenCalledTimes(1);
-    expect(onData).toHaveBeenCalledWith({
-      data: ["lossless", 1],
-      from: "local",
-      to: "remote",
-      ref: "",
-      type: "SEND_DATA",
-    });
+    expect(onData.mock.calls).toMatchInlineSnapshot(`
+      [
+        [
+          {
+            "data": [
+              "lossless",
+              1,
+            ],
+            "from": "local",
+            "ref": "",
+            "to": "remote",
+            "type": "SEND_DATA",
+          },
+        ],
+      ]
+    `);
   });
 
   it("should pass function call and return value", () => {

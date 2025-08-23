@@ -5,10 +5,11 @@ import {
   DataMessage,
   FuncCallMessage,
   FuncReturnMessage,
-  InitMessage,
   isMessage,
   MessageTypes,
   QuitMessage,
+  SynAckMessage,
+  SynMessage,
 } from "./TransferableMessage.js";
 
 export class MessageChannel {
@@ -16,9 +17,11 @@ export class MessageChannel {
     this.channel.onMessage((message) => {
       if (isMessage(message)) {
         switch (message.type) {
-          case MessageTypes.SYNC_INIT:
-            return this.#initMessageHub.dispatch(message);
+          case MessageTypes.SYNC:
+            return this.#synMessageHub.dispatch(message);
           case MessageTypes.SYNC_ACK:
+            return this.#synAckMessageHub.dispatch(message);
+          case MessageTypes.ACK:
             return this.#ackMessageHub.dispatch(message);
           case MessageTypes.SEND_DATA:
             return this.#dataMessageHub.dispatch(message);
@@ -34,21 +37,31 @@ export class MessageChannel {
     });
   }
 
-  #initMessageHub = new EventHub<InitMessage>();
-  onInit = (handler: (message: InitMessage) => void) =>
-    this.#initMessageHub.addListener(handler);
-  postInit = ({ from }: Omit<InitMessage, "type">) =>
+  #synMessageHub = new EventHub<SynMessage>();
+  onSyn = (handler: (message: SynMessage) => void) =>
+    this.#synMessageHub.addListener(handler);
+  postSyn = ({ from }: Omit<SynMessage, "type">) =>
     this.channel.postMessage({
-      type: MessageTypes.SYNC_INIT,
+      type: MessageTypes.SYNC,
       from,
-    } satisfies InitMessage);
+    } satisfies SynMessage);
+
+  #synAckMessageHub = new EventHub<SynAckMessage>();
+  onSynAck = (handler: (message: SynAckMessage) => void) =>
+    this.#synAckMessageHub.addListener(handler);
+  postSynAck = ({ from, to }: Omit<SynAckMessage, "type">) =>
+    this.channel.postMessage({
+      type: MessageTypes.SYNC_ACK,
+      from,
+      to,
+    } satisfies SynAckMessage);
 
   #ackMessageHub = new EventHub<AckMessage>();
   onAck = (handler: (message: AckMessage) => void) =>
     this.#ackMessageHub.addListener(handler);
   postAck = ({ from, to }: Omit<AckMessage, "type">) =>
     this.channel.postMessage({
-      type: MessageTypes.SYNC_ACK,
+      type: MessageTypes.ACK,
       from,
       to,
     } satisfies AckMessage);

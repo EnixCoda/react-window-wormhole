@@ -22,8 +22,6 @@ describe("Window Client", () => {
     const onPeerJoin = vi.fn(() => {});
     client1.onPeerJoin(onPeerJoin);
 
-    client1.postInit();
-    client2.postInit();
     expect(onPeerJoin).toHaveBeenCalled();
   });
 });

@@ -2,8 +2,9 @@ import { values } from "../keys.js";
 import { Transferable } from "../transferable/type.js";
 
 export enum MessageTypes {
-  SYNC_INIT = "SYNC_INIT",
+  SYNC = "SYNC_INIT",
   SYNC_ACK = "SYNC_ACK",
+  ACK = "ACK",
   SYNC_QUIT = "SYNC_QUIT",
   SEND_DATA = "SEND_DATA",
   FUNC_CALL = "FUNC_CALL",
@@ -19,10 +20,13 @@ interface BaseDataMessage<type extends MessageTypes, D>
   data: D;
 }
 
-export interface InitMessage extends BaseMessage<MessageTypes.SYNC_INIT> {}
-export interface AckMessage
+export interface SynMessage extends BaseMessage<MessageTypes.SYNC> {}
+export interface SynAckMessage
   extends TargetedMessage,
     BaseMessage<MessageTypes.SYNC_ACK> {}
+export interface AckMessage
+  extends TargetedMessage,
+    BaseMessage<MessageTypes.ACK> {}
 export interface QuitMessage extends BaseMessage<MessageTypes.SYNC_QUIT> {}
 
 export interface SourcedMessage {
@@ -64,7 +68,11 @@ export interface FuncReturnMessage
     ThreadMessage,
     BaseDataMessage<MessageTypes.FUNC_RETURN, Transferable.Encoded> {}
 
-export type ControlMessage = InitMessage | AckMessage | QuitMessage;
+export type ControlMessage =
+  | SynMessage
+  | SynAckMessage
+  | AckMessage
+  | QuitMessage;
 export type AppMessage = DataMessage | FuncCallMessage | FuncReturnMessage;
 export type Message = ControlMessage | AppMessage;
 

@@ -7,9 +7,11 @@ import {
   DataMessage,
   FuncCallMessage,
   FuncReturnMessage,
-  InitMessage,
   Message,
   QuitMessage,
+  SourcedMessage,
+  SynAckMessage,
+  SynMessage,
 } from "./TransferableMessage.js";
 
 export class P2PClient {
@@ -19,52 +21,62 @@ export class P2PClient {
   dataHub = new EventHub<DataMessage>();
   funcCallHub = new EventHub<FuncCallMessage>();
   funcReturnHub = new EventHub<FuncReturnMessage>();
-  readonly id = uuid();
 
-  constructor(private channel: MessageChannel) {
-    console.debug(this.id);
+  constructor(
+    private channel: MessageChannel,
+    readonly id = uuid(),
+  ) {
     this.#listenToChannel();
-    this.postInit();
+    this.#postSyn();
   }
 
   #listenToChannel() {
     const channel = this.channel;
-    channel.onInit((message) => {
-      this.#peerJoin(message);
-      this.#postAck({ to: message.from });
-    });
-    channel.onQuit(this.#peerLeave);
+    channel.onSyn(this.#onSyn);
+    channel.onQuit(this.#onQuit);
     const filterToClientMessage = createMessageFilter({ to: this.id });
-    channel.onAck(filterToClientMessage(this.#peerJoin));
+    channel.onSynAck(filterToClientMessage(this.#onSynAck));
+    channel.onAck(filterToClientMessage(this.#onAck));
     channel.onDataMessage(filterToClientMessage(this.dataHub.dispatch));
     channel.onFuncCall(filterToClientMessage(this.funcCallHub.dispatch));
     channel.onFuncReturn(filterToClientMessage(this.funcReturnHub.dispatch));
   }
 
-  #postAck({ to }: Pick<AckMessage, "to">) {
-    this.channel.postAck({ from: this.id, to });
-  }
+  #onSyn = (message: SynMessage) => {
+    if (message.from === this.id) return;
+    this.#postSynAck({ to: message.from });
+  };
+  #postSyn = () => this.channel.postSyn({ from: this.id });
 
-  postInit() {
-    this.channel.postInit({ from: this.id });
-  }
+  #onSynAck = ({ from }: SynAckMessage): void => {
+    this.#postAck({ to: from });
+    this.#peerJoin({ from });
+  };
+  #postSynAck = ({ to }: Pick<SynAckMessage, "to">) =>
+    this.channel.postSynAck({ from: this.id, to });
+
+  #onAck = ({ from }: AckMessage): void => this.#peerJoin({ from });
+  #postAck = ({ to }: Pick<AckMessage, "to">) =>
+    this.channel.postAck({ from: this.id, to });
 
   #addHub = new EventHub<Peer>();
-  onPeerJoin = (handler: (peer: Peer) => void) =>
-    this.#addHub.addListener(handler);
+  onPeerJoin = (handler: (peer: Peer) => void) => {
+    this.peers.forEach((peer) => handler(peer));
+    return this.#addHub.addListener(handler);
+  };
 
   #leaveHub = new EventHub<Peer>();
   onPeerLeave = (handler: (peer: Peer) => void) =>
     this.#leaveHub.addListener(handler);
 
-  #peerJoin = ({ from }: InitMessage | AckMessage): void => {
+  #peerJoin = ({ from }: SourcedMessage): void => {
     if (from === this.id) {
       console.warn(`Cannot add self as a peer.`);
       return;
     }
 
     if (this.peers.has(from)) {
-      console.warn(`Peer with id ${from} already exists.`);
+      console.warn(this.id, `Peer with id ${from} already exists.`);
       return;
     }
 
@@ -81,9 +93,11 @@ export class P2PClient {
 
     this.peers.set(from, peer);
     this.#addHub.dispatch(peer);
+
+    console.debug(this.id, `Peer joined: ${from}`);
   };
 
-  #peerLeave = ({ from }: QuitMessage): void => {
+  #onQuit = ({ from }: QuitMessage): void => {
     if (!this.peers.has(from)) return;
     const peer = this.peers.get(from)!;
     this.peers.delete(from);
