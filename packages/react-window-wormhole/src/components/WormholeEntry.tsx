@@ -1,7 +1,7 @@
 import { JSX, useEffect, useMemo, useState } from "react";
-import { Transferable } from "../transferable/type.js";
+import { Transferable } from "wormhole/transferable/type";
+import { Wormhole } from "wormhole/Wormhole";
 import { WindowP2PClient } from "../windowMessage/WindowClient.js";
-import { Wormhole } from "../Wormhole.js";
 
 type Options<TP extends Transferable.Inputs.Object> = {
   path: string;

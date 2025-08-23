@@ -1,5 +1,5 @@
-import { Channel } from "../channel/Channel.js";
-import { EventHub } from "../utils/EventHub.js";
+import { Channel } from "wormhole/channel/Channel";
+import { EventHub } from "wormhole/utils/EventHub";
 import { isCrossOrigin } from "../utils/isCrossOrigin.js";
 
 export class WindowChannel implements Channel {

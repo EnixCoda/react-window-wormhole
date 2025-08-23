@@ -1,5 +1,5 @@
-import { MessageChannel } from "../channel/MessageChannel.js";
-import { P2PClient } from "../channel/P2PClient.js";
+import { MessageChannel } from "wormhole/channel/MessageChannel";
+import { P2PClient } from "wormhole/channel/P2PClient";
 import { WindowChannel } from "./WindowChannel.js";
 
 export class WindowP2PClient extends P2PClient {

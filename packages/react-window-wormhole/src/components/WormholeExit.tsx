@@ -1,8 +1,8 @@
 import { JSX, useEffect, useMemo, useState } from "react";
-import { Transferable } from "../transferable/type.js";
+import { Transferable } from "wormhole/transferable/type";
+import { Wormhole } from "wormhole/Wormhole";
 import { isCrossOrigin } from "../utils/isCrossOrigin.js";
 import { WindowP2PClient } from "../windowMessage/WindowClient.js";
-import { Wormhole } from "../Wormhole.js";
 
 interface RendererChildren<P> {
   children: (props: P) => JSX.Element;

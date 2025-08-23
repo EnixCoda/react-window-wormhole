@@ -72,12 +72,11 @@ export class Entrance<T> extends WormholeEndpoint<T> {
       const resolveSource = this.resources.get(ref);
       const method = resolve(path, resolveSource);
       if (isInputOf.callable(method)) {
+        const ref = uuid();
         const decodedArgs = args.map((arg) =>
           this.decode(peer, ref, arg),
         ) as Transferable.Input[];
         const returnValue = await method(...decodedArgs);
-
-        const ref = uuid();
         this.resources.set(ref, returnValue);
 
         peer.postFuncReturn({

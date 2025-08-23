@@ -1,12 +1,17 @@
 {
-  "name": "react-window-wormhole",
+  "name": "wormhole",
   "version": "1.0.0",
-  "description": "Extend your React App to other browser windows.",
+  "description": "Cross-context communication.",
   "type": "module",
   "module": "esm/index.js",
   "types": "esm/index.d.ts",
   "author": "EnixCoda <enixcoda@gmail.com>",
   "license": "MIT",
+  "exports": {
+    "./*": {
+      "import": "./esm/*.js"
+    }
+  },
   "files": [
     "esm"
   ],
@@ -16,18 +21,9 @@
     "test": "vitest",
     "test:watch": "vitest --watch"
   },
-  "dependencies": {
-    "wormhole": "^1.0.0"
-  },
   "devDependencies": {
     "@types/node": "^24.2.0",
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "react": "^19.1.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
-  },
-  "peerDependencies": {
-    "react": "^16 || ^17 || ^18 || ^19"
   }
 }
