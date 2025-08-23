@@ -3,7 +3,7 @@ import { Transferable } from "../transferable/type.js";
 import { WindowP2PClient } from "../windowMessage/WindowClient.js";
 import { Wormhole } from "../Wormhole.js";
 
-type Options<TP extends Transferable.Decode.Object> = {
+type Options<TP extends Transferable.Inputs.Object> = {
   path: string;
   features?: string;
   supportReload?: boolean;
@@ -11,8 +11,8 @@ type Options<TP extends Transferable.Decode.Object> = {
   props: TP;
 };
 
-type Props<TP extends Transferable.Decode.Object> = Options<TP>;
-export function WormholeEntry<P extends Transferable.Decode.Object>(
+type Props<TP extends Transferable.Inputs.Object> = Options<TP>;
+export function WormholeEntry<P extends Transferable.Inputs.Object>(
   options: Props<P>,
 ): JSX.Element {
   useWormholeEntry(options);
@@ -20,7 +20,7 @@ export function WormholeEntry<P extends Transferable.Decode.Object>(
   return <></>;
 }
 
-export function useWormholeEntry<P extends Transferable.Decode.Object>({
+export function useWormholeEntry<P extends Transferable.Inputs.Object>({
   path,
   features,
   reloadDuration = 1000,

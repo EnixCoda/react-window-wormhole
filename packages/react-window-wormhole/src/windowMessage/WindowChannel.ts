@@ -1,6 +1,6 @@
 import { Channel } from "../channel/Channel.js";
-import { isCrossOrigin } from "../utils.js";
 import { EventHub } from "../utils/EventHub.js";
+import { isCrossOrigin } from "../utils/isCrossOrigin.js";
 
 export class WindowChannel implements Channel {
   constructor(private targetWindow: Window) {

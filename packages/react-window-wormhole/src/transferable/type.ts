@@ -1,12 +1,35 @@
 export namespace Transferable {
   export type FieldKey = string | number;
 
+  export type __Lossless = number | string | boolean | null | undefined;
+
+  export namespace Inputs {
+    export type Lossless = __Lossless;
+    /* Callable has to be async to ensure cross-context sync */
+    export type Callable<
+      Args extends Input[] = Input[],
+      R extends Input | void | Promise<Input | void> = void,
+    > = (...args: Args) => R;
+
+    export type Object = {
+      [key: FieldKey]: Input;
+    };
+    export type Arr = Array<Input>;
+  }
+
+  export type Input =
+    | Inputs.Lossless
+    | Inputs.Object
+    | Inputs.Arr
+    | Inputs.Callable<any[], any>;
+
   export namespace Decode {
-    export type Lossless = number | string | boolean | null | undefined;
+    export type Lossless = __Lossless;
+    /* Callable has to be async to ensure cross-context sync */
     export type Callable<
       Args extends Decoded[] = Decoded[],
       R extends Decoded | void = void,
-    > = (...args: Args) => R;
+    > = (...args: Args) => Promise<R>;
 
     export type Object = {
       [key: FieldKey]: Decoded;
@@ -25,7 +48,7 @@ export namespace Transferable {
     export type PayloadOf<T extends __Encode<any, any>> =
       T extends __Encode<infer K, infer V> ? V : never;
 
-    export type Lossless = __Encode<"lossless", Decode.Lossless>;
+    export type Lossless = __Encode<"lossless", Inputs.Lossless>;
     export type Callable = __Encode<"callable", FieldKey[]>;
     export type Object = __Encode<
       "object",
@@ -37,39 +60,41 @@ export namespace Transferable {
     export type Unknown = __Encode<"unknown", null>;
   }
 
-  export type Transferred<T> = T extends Decode.Object
-    ? {
-        [key in keyof T]: Transferred<T[key]>;
-      }
-    : T extends Decode.Arr
-      ? {
-          [key in keyof T]: Transferred<T[key]>;
-        }
-      : T extends Decode.Lossless
-        ? T
-        : TransferredCallable<T>;
-
-  type TransferredReturnType<R> = Promise<
-    R extends void ? void : R extends Decoded ? Transferred<R> : never
-  >;
-
-  type TransferredArgs<Args extends Decoded[]> = Args extends []
-    ? []
-    : Args extends [infer A0, ...infer Rest]
-      ? Rest extends Decoded[]
-        ? [Transferred<A0>, ...TransferredArgs<Rest>]
-        : never
-      : never;
-
-  type TransferredCallable<T> =
-    T extends Decode.Callable<infer Args, infer R>
-      ? (...args: TransferredArgs<Args>) => TransferredReturnType<R>
-      : never;
-
-  export type Encoded =
+  export type Encoded<I = any> =
     | Encode.Lossless
     | Encode.Callable
     | Encode.Object
     | Encode.Arr
     | Encode.Unknown;
+
+  export type Transferred<I> = I extends Inputs.Lossless
+    ? I
+    : I extends Inputs.Object
+      ? TransferredObj<I>
+      : I extends Inputs.Arr
+        ? TransferredArr<I>
+        : I extends Inputs.Callable<infer Args, infer R>
+          ? (...args: TransferredArr<Args>) => Promise<TransferredReturnType<R>>
+          : never;
+
+  type TransferredObj<O extends Inputs.Object> = {
+    [key in keyof O]: Transferred<O[key]>;
+  };
+
+  type TransferredArr<Arr extends Inputs.Arr> = Arr extends []
+    ? []
+    : Arr extends [infer Arg, ...infer Rest]
+      ? Rest extends Input[]
+        ? [Transferred<Arg>, ...TransferredArr<Rest>]
+        : never
+      : never;
+
+  type TransferredReturnType<R> =
+    R extends Promise<infer U>
+      ? Transferred<U>
+      : R extends void
+        ? void
+        : R extends Input
+          ? Transferred<R>
+          : never;
 }

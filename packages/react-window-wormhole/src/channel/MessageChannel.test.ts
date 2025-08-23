@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { encodeTransferable, resolve } from "../transferable/encode.js";
-import { isDecodedOf } from "../transferable/isDecoded.js";
+import { isInputOf } from "../transferable/isDecoded.js";
 import { DataMessage, FuncCallMessage } from "./TransferableMessage.js";
 import {
   createMessageClients,
@@ -51,11 +51,12 @@ describe("MessageChannel", () => {
       },
     };
 
-    const onFuncCall = vi.fn(({ data }: FuncCallMessage) => {
+    const onFuncCall = vi.fn(async ({ data }: FuncCallMessage) => {
       const [path, args] = data;
       const method = resolve(path, source);
-      if (isDecodedOf.callable(method)) {
-        return method(...args);
+      if (isInputOf.callable(method)) {
+        await method(...args);
+        return;
       }
 
       throw new Error(`No callable found at path: ${path}`);

@@ -1,6 +1,6 @@
 import { JSX, useEffect, useMemo, useState } from "react";
 import { Transferable } from "../transferable/type.js";
-import { isCrossOrigin } from "../utils.js";
+import { isCrossOrigin } from "../utils/isCrossOrigin.js";
 import { WindowP2PClient } from "../windowMessage/WindowClient.js";
 import { Wormhole } from "../Wormhole.js";
 
@@ -8,9 +8,9 @@ interface RendererChildren<P> {
   children: (props: P) => JSX.Element;
 }
 
-export function WormholeExit<TP extends Transferable.Decoded>({
+export function WormholeExit<TP>({
   children,
-}: RendererChildren<TP>) {
+}: RendererChildren<Transferable.Transferred<TP>>) {
   const opener = window.opener;
   if (!opener) return <span>no opener</span>;
   if (isCrossOrigin(opener)) return <span>parent window redirected.</span>;
@@ -22,15 +22,17 @@ export function WormholeExit<TP extends Transferable.Decoded>({
   );
 }
 
-function PreparedWormholeExit<TP extends Transferable.Decoded>({
+function PreparedWormholeExit<TP>({
   window,
   children,
-}: { window: Window } & RendererChildren<TP>) {
+}: { window: Window } & RendererChildren<Transferable.Transferred<TP>>) {
   const exit = useMemo(
     () => new Wormhole.Exit<TP>(new WindowP2PClient(window)),
     [window],
   );
-  const [props, setProps] = useState<{ value: TP } | null>(null);
+  const [props, setProps] = useState<{
+    value: Transferable.Transferred<TP>;
+  } | null>(null);
   useEffect(() => {
     exit.onReceive((message) => setProps({ value: message }));
   }, []);

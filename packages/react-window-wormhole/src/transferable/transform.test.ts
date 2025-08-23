@@ -8,10 +8,13 @@ const defaultTransformContext: DecodeTransformContext = {
   generateCallable:
     (path) =>
     (...args) =>
-      console.warn(
-        `No callable context provided, using default callable that does nothing.`,
-        path,
-        args,
+      Promise.reject(
+        new Error(
+          `No callable context provided, using default callable that does nothing.`,
+          {
+            cause: { path, args },
+          },
+        ),
       ),
 };
 
@@ -61,8 +64,8 @@ describe("TransferableData", () => {
   });
 
   it("should handle transferable objects", () => {
-    const decoded: Transferable.Decode.Object = { a: 1, b: "test", c: true };
-    expect(encodeTransferable(decoded)).toMatchInlineSnapshot(`
+    const input: Transferable.Inputs.Object = { a: 1, b: "test", c: true };
+    expect(encodeTransferable(input)).toMatchInlineSnapshot(`
       [
         "object",
         {
@@ -82,11 +85,11 @@ describe("TransferableData", () => {
       ]
     `);
 
-    expect(_decodeTransferable(encodeTransferable(decoded))).toEqual(decoded);
+    expect(_decodeTransferable(encodeTransferable(input))).toEqual(input);
   });
 
   it("should handle transferable arrays", () => {
-    const arr: Transferable.Decode.Arr = [1, "test", true, null];
+    const arr: Transferable.Inputs.Arr = [1, "test", true, null];
     expect(encodeTransferable(arr)).toMatchInlineSnapshot(`
       [
         "array",

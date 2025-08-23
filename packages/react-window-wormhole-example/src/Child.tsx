@@ -2,7 +2,7 @@ import { WormholeExit } from "react-window-wormhole";
 
 export type Props = {
   count: number;
-  onAdd: (val: number) => null;
+  onAdd: (val: number) => void;
 };
 
 export function Child() {

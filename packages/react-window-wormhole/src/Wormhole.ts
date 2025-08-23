@@ -4,20 +4,20 @@ import { ThreadManager } from "./channel/ThreadManagement.js";
 import { RefMessage } from "./channel/TransferableMessage.js";
 import { decodeTransferable } from "./transferable/decode.js";
 import { encodeTransferable, resolve } from "./transferable/encode.js";
-import { isDecodedOf } from "./transferable/isDecoded.js";
+import { isInputOf } from "./transferable/isDecoded.js";
 import { Transferable } from "./transferable/type.js";
 import { EventHub } from "./utils/EventHub.js";
 import { NullableValue } from "./utils/NullableValue.js";
 import { uuid } from "./utils/uuid.js";
 
-class WormholeEndpoint {
+class WormholeEndpoint<T> {
   protected threadManagement = new ThreadManager();
 
   #postFuncCall<T = unknown>(
     peer: Peer,
     ref: RefMessage["ref"],
     data: Transferable.FieldKey[],
-    args: Transferable.Decoded[],
+    args: Transferable.Input[],
   ): Promise<T> {
     const [thread, { promise }] = this.threadManagement.create<T>();
     peer.postFuncCall({
@@ -33,7 +33,7 @@ class WormholeEndpoint {
     ref: RefMessage["ref"],
     data: Transferable.Encoded,
   ) =>
-    decodeTransferable(data, {
+    decodeTransferable<T>(data, {
       generateCallable:
         (path) =>
         (...args) =>
@@ -41,9 +41,7 @@ class WormholeEndpoint {
     });
 }
 
-export class Entrance<
-  T extends Transferable.Decoded = Transferable.Decoded,
-> extends WormholeEndpoint {
+export class Entrance<T> extends WormholeEndpoint<T> {
   toTransfer: NullableValue<[RefMessage["ref"], T]> = undefined;
   resources = new Map<RefMessage["ref"], any>();
 
@@ -63,7 +61,7 @@ export class Entrance<
   };
 
   #setPeer = (peer: Peer) => {
-    peer.onFuncCall(({ ref, thread, data: [path, args] }) => {
+    peer.onFuncCall(async ({ ref, thread, data: [path, args] }) => {
       if (this.toTransfer === undefined) {
         console.warn(
           `No data to transfer for path: ${path}. Please feed data before calling functions.`,
@@ -73,10 +71,11 @@ export class Entrance<
 
       const resolveSource = this.resources.get(ref);
       const method = resolve(path, resolveSource);
-      if (isDecodedOf.callable(method)) {
-        const returnValue = method(
-          ...args.map((arg) => this.decode(peer, ref, arg)),
-        );
+      if (isInputOf.callable(method)) {
+        const decodedArgs = args.map((arg) =>
+          this.decode(peer, ref, arg),
+        ) as Transferable.Input[];
+        const returnValue = await method(...decodedArgs);
 
         const ref = uuid();
         this.resources.set(ref, returnValue);
@@ -100,9 +99,7 @@ export class Entrance<
   };
 }
 
-export class Exit<
-  T extends Transferable.Decoded = Transferable.Decoded,
-> extends WormholeEndpoint {
+export class Exit<T> extends WormholeEndpoint<T> {
   threadManagement = new ThreadManager();
 
   constructor(private client: P2PClient) {
@@ -112,7 +109,7 @@ export class Exit<
 
   #setPeer = (peer: Peer) => {
     peer.onData((message) =>
-      this.#dataHub.dispatch(this.decode(peer, message.ref, message.data) as T),
+      this.#dataHub.dispatch(this.decode(peer, message.ref, message.data)),
     );
     peer.onFuncReturn((message) =>
       this.threadManagement
@@ -121,8 +118,8 @@ export class Exit<
     );
   };
 
-  #dataHub = new EventHub<T>(true);
-  onReceive(handler: (data: T) => void) {
+  #dataHub = new EventHub<Transferable.Transferred<T>>(true);
+  onReceive(handler: (data: Transferable.Transferred<T>) => void) {
     this.#dataHub.addListener(handler);
   }
 }
